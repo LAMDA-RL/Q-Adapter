@@ -1,6 +1,8 @@
 # Q-Adapter
 
-The implementation of the manuscript "Q-Adapter: Customizing Pre-trained LLMs to New Preferences with Forgetting Mitigation".
+Author's implementation of ICLR'25 paper "Q-Adapter: Customizing Pre-trained LLMs to New Preferences with Forgetting Mitigation".
+
+[arXiv link](https://arxiv.org/abs/2407.03856)
 
 ## Installation
 
@@ -17,7 +19,7 @@ The rest of the dependencies can be installed with the following command:
 pip install -r requirements.txt
 ```
 
-## Training Q-Adapter
+## Training
 
 To train the Q-Adapter with the default configuration in the DSP dataset, you can run the following command:
 
@@ -33,6 +35,24 @@ Alternatively, we can train Q-Adapter in the HH-RLHF dataset:
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 TOKENIZERS_PARALLELISM=true accelerate launch --config_file accelerate_config.yaml qadapter_train.py --base_model=meta-llama/Meta-Llama-3.1-8B-Instruct --dataset_name=hh-rlhf --data_dir=data/chat/hh-rlhf/harmless.train.json --lora_r=8 --logging_steps=20 --eval_steps=100 --num_epochs=2 --micro_batch_size=1 --wandb_project=Q-Adapter --wandb_run_name=QAdapter-harmless --output_dir=logs/qadapter-hh-harmless
 ```
+
+## Evaluation
+
+We use `lm-eval` to evaluate the performance of all methods in a modified repo to implement the inference process of Q-Adapter. You should first install the library: 
+
+```bash
+pip install -e lm-evaluation-harness
+```
+
+Afterward, you can evaluate any model with the following script:
+
+```bash
+# MMLU
+CUDA_VISIBLE_DEVICES=0 lm_eval --model hf --model_args pretrained=meta-llama/Meta-Llama-3.1-8B-Instruct,load_in_8bit=True,peft=your/peft/model/path --tasks mmlu --device=cuda --batch_size=auto --trust_remote_code --show_config
+# Other benchmarks
+CUDA_VISIBLE_DEVICES=0 lm_eval --model hf --model_args pretrained=meta-llama/Meta-Llama-3.1-8B-Instruct,load_in_8bit=True,peft=your/peft/model/path --tasks gsm8k_cot,leaderboard_mmlu_pro,leaderboard_bbh,leaderboard_ifeval --device=cuda --batch_size=auto --trust_remote_code --show_config --apply_chat_template --fewshot_as_multiturn
+```
+
 
 ### Baselines
 
@@ -70,19 +90,15 @@ data_class=academy # data_class can be academy, business, entertainment, or lite
 CUDA_VISIBLE_DEVICES=0 python ppo_train.py --base_model=meta-llama/Meta-Llama-3.1-8B-Instruct --rm_model=logs/rm/rm-dsp-${data_class} --dataset_name=dsp --data_dir=data/chat/dsp/dsp_${data_class}_pairs.train.json --lora_r=8 --total_steps=500 --num_epochs=5 --micro_batch_size=8 --wandb_project=Q-Adapter-Tuned --wandb_run_name=PPO-${data_class} --output_dir=logs/ppo-dsp-${data_class}
 ```
 
-## Evaluate Q-Adapter
+## Citation
 
-We use `lm-eval` to evaluate the performance of all methods in a modified repo to implement the inference process of Q-Adapter. You should first install the library: 
+If you find our work useful, please cite:
 
-```bash
-pip install -e lm-evaluation-harness
-```
-
-Afterward, you can evaluate any model with the following script:
-
-```bash
-# MMLU
-CUDA_VISIBLE_DEVICES=0 lm_eval --model hf --model_args pretrained=meta-llama/Meta-Llama-3.1-8B-Instruct,load_in_8bit=True,peft=your/peft/model/path --tasks mmlu --device=cuda --batch_size=auto --trust_remote_code --show_config
-# Other benchmarks
-CUDA_VISIBLE_DEVICES=0 lm_eval --model hf --model_args pretrained=meta-llama/Meta-Llama-3.1-8B-Instruct,load_in_8bit=True,peft=your/peft/model/path --tasks gsm8k_cot,leaderboard_mmlu_pro,leaderboard_bbh,leaderboard_ifeval --device=cuda --batch_size=auto --trust_remote_code --show_config --apply_chat_template --fewshot_as_multiturn
+```bib
+@inproceedings{qadapter,
+  title={{Q-Adapter}: Customizing Pre-trained LLMs to New Preferences with Forgetting Mitigation},
+  author={Li, Yi-Chen and Zhang, Fuxiang and Qiu, Wenjie and Yuan, Lei and Jia, Chengxing and Zhang, Zongzhang and Yu, Yang and An, Bo},
+  booktitle={The Thirteenth International Conference on Learning Representations},
+  year={2025}
+}
 ```
